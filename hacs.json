@@ -1,0 +1,6 @@
+{
+  "name": "MW Scene Button Element",
+  "filename": "mw-scene-button-element.js",
+  "render_readme": true,
+  "homeassistant": "2024.4.0"
+}

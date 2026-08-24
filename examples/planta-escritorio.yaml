@@ -1,0 +1,42 @@
+# Os botões de cena do escritório sobre a planta baixa.
+#
+# `left`/`top` marcam o CENTRO do botão (% da planta). `width` também é % da
+# planta; o miolo (ícone, texto) é % do próprio botão, então nada desmonta ao
+# redimensionar.
+
+type: picture-elements
+image: /local/planta/escritorio.png
+elements:
+  - type: custom:mw-scene-button-element
+    entity: scene.ligar_climatizador_escritorio
+    title: Ligar o climatizador do escritório
+    name: CLIMAT
+    icon: mdi:play
+    icon_on: mdi:fan
+    color_icon: rgba(0, 100, 0, 0.8)
+    state_entity: switch.tomada_climatizador_do_escritorio_socket_1
+    left: 38%
+    top: 62%
+    width: 9%
+
+  - type: custom:mw-scene-button-element
+    entity: scene.velocidade_do_climatizador_do_escritorio
+    title: Velocidade do climatizador
+    name: VELOC.
+    icon: mdi:fan-speed-1
+    color_icon: rgba(0, 100, 0, 0.8)
+    left: 49%
+    top: 62%
+    width: 9%
+
+  # só o ícone, sem rótulo — para lugar apertado da planta
+  - type: custom:mw-scene-button-element
+    entity: scene.oscilar_o_climatizador_do_escritorio
+    title: Oscilar o climatizador
+    icon: mdi:fan-auto
+    hide_label: true
+    icon_size: 62
+    color_icon: rgba(0, 100, 0, 0.8)
+    left: 60%
+    top: 62%
+    width: 7%
