@@ -208,5 +208,39 @@ check("nome curto em pt-BR na lista",
 check("campo `title` no formulário do editor",
   /MW_TITLE_FIELD/.test(src), "sem ele a segunda linha da lista fica 'Unknown type'");
 
+console.log("desenho:");
+if (mainName) {
+  const fakeHass = {
+    states: {
+      "scene.ar": { state: "2026-08-23T10:00:00+00:00", attributes: { friendly_name: "AR ESCRITÓRIO" } },
+      "switch.tomada": { state: "on", attributes: {} },
+    },
+    callService: () => {},
+  };
+  const el = new reg[mainName]();
+  el.setConfig({ entity: "scene.ar", name: "CLIMAT", icon: "mdi:play", color_icon: "green" });
+  el.hass = fakeHass;
+  const html = String(el.shadowRoot && el.shadowRoot.innerHTML || "");
+  check("desenha sem explodir", html.length > 0);
+  check("o ícone configurado é o que vai para a tela", html.includes('icon="mdi:play"'));
+  check("o rótulo é o `name`", html.includes("CLIMAT"));
+  check("cena apagada usa a cor de ícone escolhida", html.includes("color:green"));
+  check("cena não acende o papel sozinha", !html.includes("linear-gradient(145deg, #fdfaf3"));
+
+  const el2 = new reg[mainName]();
+  el2.setConfig({ entity: "scene.ar", name: "CLIMAT", icon: "mdi:play",
+                  state_entity: "switch.tomada", icon_on: "mdi:fan" });
+  el2.hass = fakeHass;
+  const html2 = String(el2.shadowRoot && el2.shadowRoot.innerHTML || "");
+  check("com state_entity ligado o papel acende", html2.includes("linear-gradient(145deg, #fdfaf3"));
+  check("com state_entity ligado vale o icon_on", html2.includes('icon="mdi:fan"'));
+
+  const el3 = new reg[mainName]();
+  el3.setConfig({ entity: "scene.sumiu", icon_unavailable: "mdi:cancel" });
+  el3.hass = fakeHass;
+  check("cena que não existe cai no ícone de indisponível",
+    String(el3.shadowRoot.innerHTML).includes('icon="mdi:cancel"'));
+}
+
 console.log(fails ? `\n${fails} verificação(ões) falharam` : "\ntudo ok");
 process.exit(fails ? 1 : 0);
