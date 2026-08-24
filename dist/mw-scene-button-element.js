@@ -21,7 +21,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "0.2.0";
+  const VERSION = "0.2.1";
 
   // >>> mw-element-identity v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/mw-element-identity/mw-element-identity.js
   // Identidade dos elementos MW na lista do editor do picture-elements.
@@ -670,8 +670,8 @@
           .ic{grid-area:i;display:flex;align-items:center;justify-content:center;
             width:100%;height:100%;overflow:hidden;
             ${c.control === false ? "opacity:.6;" : ""}}
-          .ic ha-icon{--mdc-icon-size:26px;--mdc-icon-size:${isz}cqmin;
-            width:${isz}cqmin;height:${isz}cqmin;
+          .ic ha-icon{width:26px;width:${isz}cqmin;height:26px;height:${isz}cqmin;
+            --mdc-icon-size:100%;
             color:${iconColor};filter:${iconFilter};${spin}
             transform-origin:center center;backface-visibility:hidden;}
           .nm{grid-area:n;max-width:100%;font-weight:600;line-height:1.1;
