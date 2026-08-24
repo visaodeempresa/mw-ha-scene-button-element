@@ -14,6 +14,11 @@ name: Publicar no Home Assistant
 # GERADO por IA/tools/mw-devops.sh — não editar à mão.
 # Fonte canônica: IA/lib/mw-devops/templates/deploy-ha.yml
 on:
+  # Chamado pelo auto-release. ARMADILHA MEDIDA: release criada com o
+  # GITHUB_TOKEN padrão NÃO dispara outro workflow (proteção do GitHub contra
+  # recursão) — por isso o auto-release CHAMA este aqui em vez de confiar no
+  # evento `release`. O evento fica para release feita à mão.
+  workflow_call:
   release: { types: [published] }
   workflow_dispatch:
     inputs:
