@@ -36,9 +36,10 @@ entra no `elements:` e se posiciona com `left`/`top`.
 ## Por que cena é diferente
 
 `scene.*` nunca vale `on` — o estado da cena é o carimbo de tempo da última
-execução. Então: **um** ícone (sempre visível), cor do ícone apagado
-configurável, `state_entity` opcional para acender o papel, e um **pulso de
-papel** ao tocar, que é o único retorno que uma cena dá.
+execução. Então o botão **nasce aceso** (cena é ação, não interruptor) e só
+apaga se a cena estiver indisponível/desabilitada ou se um `state_entity`
+explícito disser que o aparelho está desligado. O ícone é **um** só, com cor de
+propriedade, e o toque devolve o **aperto do papel**.
 
 ## A lista de cenas
 

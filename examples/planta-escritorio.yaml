@@ -12,7 +12,7 @@ elements:
     title: Ligar o climatizador do escritório
     name: CLIMAT
     icon: mdi:play
-    icon_on: mdi:fan
+    icon_off: mdi:power-plug-off
     color_icon: rgba(0, 100, 0, 0.8)
     state_entity: switch.tomada_climatizador_do_escritorio_socket_1
     left: 38%

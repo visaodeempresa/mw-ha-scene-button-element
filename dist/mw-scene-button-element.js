@@ -7,9 +7,10 @@
  *
  * POR QUE CENA É DIFERENTE
  *   `scene.*` nunca vale "on" — o estado da cena é o carimbo de tempo da
- *   última execução. Logo o ícone é UM só, a cor do ícone apagado é
- *   configurável, e quem acende o papel é o `state_entity` opcional. Sem ele,
- *   o toque devolve um pulso de papel: é o único retorno que a cena dá.
+ *   última execução. Logo o botão NASCE ACESO (cena é ação, não interruptor) e
+ *   só apaga se a cena estiver indisponível/desabilitada ou se um
+ *   `state_entity` explícito disser que o aparelho está desligado. O ícone é
+ *   UM só, com cor de propriedade, e o toque devolve o APERTO do papel.
  *
  * GEOMETRIA proporcional: largura em % da planta e o resto em `cqmin` (por
  * cento da menor dimensão do próprio botão), então redimensionar a tela não
@@ -20,7 +21,7 @@
 (() => {
   "use strict";
 
-  const VERSION = "0.1.0";
+  const VERSION = "0.2.0";
 
   // >>> mw-element-identity v1 — fonte canônica: /Volumes/SSD-T1-01/CLAUDE-SSD/IA/lib/mw-element-identity/mw-element-identity.js
   // Identidade dos elementos MW na lista do editor do picture-elements.
@@ -506,7 +507,7 @@
 
     // --- conteúdo ---
     icon: "mdi:play",
-    icon_on: "",
+    icon_off: "",
     icon_unavailable: "mdi:cancel",
     hide_label: false,
     name_position: "bottom",
@@ -535,7 +536,7 @@
     color_off_border: "rgba(255, 255, 255, 0.08)",
     color_unavail: "#f5c518",
     color_icon: "",
-    color_icon_on: "",
+    color_icon_off: "",
   };
 
   const LAYOUT = {
@@ -545,7 +546,7 @@
     right: { grid: "grid-template-areas:'i n';grid-template-columns:1fr min-content;grid-template-rows:1fr;", edge: "padding-right:6cqmin;" },
   };
 
-  const FLASH_MS = 700;
+  const FLASH_MS = 320;
   const num = (v, alt) => (v === "" || v === null || v === undefined || isNaN(Number(v)) ? alt : Number(v));
 
   class MwSceneButtonElement extends HTMLElement {
@@ -572,8 +573,11 @@
       const c = this._cfg;
       // caminho rápido: o HA empurra `hass` a cada mudança de QUALQUER
       // entidade. Cena não tem estado útil, então só o state_entity conta.
-      const viva = !!hass.states[c.entity];
+      const sc = hass.states[c.entity];
+      const viva = !!sc && sc.state !== "unavailable" && sc.state !== "unknown";
       const st = c.state_entity ? hass.states[c.state_entity] : null;
+      // o carimbo de tempo da cena NÃO entra na chave de propósito: ativar a
+      // cena mudaria o state e o redesenho comeria o aperto do papel
       const key = `${viva ? 1 : 0}|${st ? st.state : "·"}`;
       if (key === this._key) return;
       this._key = key;
@@ -611,10 +615,16 @@
     _render() {
       const c = this._cfg;
       const sc = this._hass.states[c.entity];
-      const dead = !sc;
+      // cena desabilitada some do `states`; cena que existe pode estar
+      // indisponível. Fora esses dois casos, botão de cena é sempre papel.
+      const dead = !sc || sc.state === "unavailable" || sc.state === "unknown";
       const stEnt = c.state_entity ? this._hass.states[c.state_entity] : null;
-      const isOn = this._flashing === true
-        || (!!stEnt && String(stEnt.state) === String(c.state_on));
+      // POR QUE O PADRÃO É ACESO: cena não é interruptor — é ação. Não existe
+      // "cena desligada", então nascer afundado era mentira de estado. Só quem
+      // pede explicitamente um `state_entity` vê o botão apagar.
+      const isOn = dead ? false
+        : c.state_entity ? (!!stEnt && String(stEnt.state) === String(c.state_on))
+        : true;
 
       const bg = isOn ? paperGradient(c.paper_color) : c.color_off_bg;
       const border = isOn ? c.color_on_border : c.color_off_border;
@@ -623,13 +633,13 @@
         : "inset 2px 2px 5px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.04)";
 
       const icon = dead ? c.icon_unavailable
-        : (isOn && c.icon_on) ? c.icon_on
+        : (!isOn && c.icon_off) ? c.icon_off
         : (c.icon || sc?.attributes?.icon || "mdi:play");
 
       const nameColor = dead ? c.color_unavail : isOn ? c.color_on_name : c.color_off_name;
       const iconColor = dead ? c.color_unavail
-        : isOn ? (c.color_icon_on || c.color_on_name)
-        : (c.color_icon || "rgba(255,255,255,0.70)");
+        : isOn ? (c.color_icon || c.color_on_name)
+        : (c.color_icon_off || "rgba(255,255,255,0.70)");
       const iconFilter = isOn && c.icon_shadow !== false
         ? "drop-shadow(1px 2px 2px rgba(0,0,0,0.55)) drop-shadow(3px 6px 8px rgba(0,0,0,0.30))"
         : "none";
@@ -654,7 +664,7 @@
             box-shadow:${shadow};color:${nameColor};overflow:hidden;
             cursor:${c.control === false ? "default" : "pointer"};
             -webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;
-            transition:background .2s ease,box-shadow .2s ease;}
+            transition:background .2s ease,box-shadow .2s ease,transform .12s ease,filter .12s ease;}
           .ct{display:grid;width:100%;height:100%;text-align:center;align-items:center;
             padding:6cqmin 0;box-sizing:border-box;${layout.grid}${gap ? `gap:${gap}cqmin;` : ""}}
           .ic{grid-area:i;display:flex;align-items:center;justify-content:center;
@@ -726,14 +736,19 @@
       });
     }
 
+    // O papel já está aceso — o retorno do toque não pode ser "acender". É o
+    // APERTO: a folha afunda um tico e clareia, e volta. Mexe só no estilo
+    // inline, sem redesenhar, senão o próximo `hass` apagaria o efeito.
     _pulse() {
       if (this._cfg.flash === false) return;
+      const el = this.shadowRoot && this.shadowRoot.querySelector(".bt");
+      if (!el) return;
       clearTimeout(this._flashTimer);
-      this._flashing = true;
-      this._render();
+      el.style.filter = "brightness(1.22)";
+      el.style.transform = "scale(0.955)";
       this._flashTimer = setTimeout(() => {
-        this._flashing = false;
-        this._render();
+        el.style.filter = "";
+        el.style.transform = "";
       }, FLASH_MS);
     }
   }
@@ -744,7 +759,7 @@
     name: "Nome no botão",
     title: MW_TITLE_LABEL,
     icon: "Ícone",
-    icon_on: "Ícone quando o estado está ligado (vazio = o mesmo)",
+    icon_off: "Ícone quando o estado está desligado (vazio = o mesmo)",
     icon_unavailable: "Ícone (cena não existe)",
     state_entity: "Entidade de estado (opcional — acende o papel)",
     state_on: "Valor que conta como ligado",
@@ -763,7 +778,7 @@
     name_size: "Tamanho do texto (% do botão)",
     name_gap: "Distância entre label e ícone (% do botão)",
     control: "Permitir ativar no toque",
-    flash: "Pulso de papel ao ativar a cena",
+    flash: "Aperto do papel ao ativar a cena",
     haptic: "Vibrar ao tocar",
     animate: "Animar ícone quando ligado (girar)",
     icon_shadow: "Sombra no ícone quando ligado",
@@ -772,18 +787,18 @@
     confirm_3d: "Balão 3D (a confirmação em papel com relevo)",
     confirm_paper_dark: "Balão em papel escuro",
     confirm_paper_color: "Cor do papel do balão",
-    paper_color: "Cor do papel (ligado)",
-    color_on_name: "Ligado: texto",
-    color_off_name: "Desligado: texto",
+    paper_color: "Cor do papel",
+    color_on_name: "Texto",
+    color_off_name: "Desligado: texto (só com entidade de estado)",
     color_off_bg: "Desligado: fundo",
     color_on_border: "Ligado: borda",
     color_off_border: "Desligado: borda",
     color_unavail: "Cena inexistente: destaque",
-    color_icon: "Desligado: ícone",
-    color_icon_on: "Ligado: ícone (vazio = a cor do texto)",
+    color_icon: "Ícone (vazio = a cor do texto)",
+    color_icon_off: "Desligado: ícone",
   };
 
-  const COLOR_FIELDS = ["color_icon", "color_icon_on", "color_on_name", "color_off_name",
+  const COLOR_FIELDS = ["color_icon", "color_icon_off", "color_on_name", "color_off_name",
     "color_off_bg", "color_on_border", "color_off_border", "color_unavail"];
 
   const parseColor = (str) => {
@@ -806,7 +821,7 @@
     { name: "state_entity", selector: { entity: {} } },
     ...(cfg?.state_entity ? [
       { name: "state_on", selector: { text: {} } },
-      { name: "icon_on", selector: { icon: {} } },
+      { name: "icon_off", selector: { icon: {} } },
     ] : []),
     { type: "grid", name: "", schema: [
       { name: "left", selector: { text: {} } },
